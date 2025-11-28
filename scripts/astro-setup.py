@@ -595,6 +595,147 @@ Proceed with this configuration?
         with open(COMPOSE_FILE, "w") as f:
             yaml.dump(compose_config, f, default_flow_style=False, sort_keys=False)
 
+    def generate_homepage_config(self) -> None:
+        """Generate Homepage dashboard configuration."""
+        if self.config.dashboard != "homepage":
+            return
+
+        homepage_dir = CONFIG_DIR / "homepage"
+        homepage_dir.mkdir(parents=True, exist_ok=True)
+
+        # Get local IP for service URLs
+        try:
+            result = subprocess.run(["hostname", "-I"], capture_output=True, text=True)
+            ip = result.stdout.strip().split()[0]
+        except Exception:
+            ip = "localhost"
+
+        # Build services config
+        media_server = self.config.media_server
+        media_ports = {"plex": 32400, "jellyfin": 8096, "emby": 8096}
+        media_port = media_ports.get(media_server, 8096)
+
+        services = [
+            {
+                "Media": [
+                    {
+                        media_server.title(): {
+                            "icon": f"{media_server}.png",
+                            "href": f"http://{ip}:{media_port}",
+                            "description": "Media Server",
+                        }
+                    }
+                ]
+            },
+            {
+                "Management": [
+                    {
+                        "Radarr": {
+                            "icon": "radarr.png",
+                            "href": f"http://{ip}:7878",
+                            "description": "Movie Management",
+                        }
+                    },
+                    {
+                        "Sonarr": {
+                            "icon": "sonarr.png",
+                            "href": f"http://{ip}:8989",
+                            "description": "TV Show Management",
+                        }
+                    },
+                    {
+                        "Lidarr": {
+                            "icon": "lidarr.png",
+                            "href": f"http://{ip}:8686",
+                            "description": "Music Management",
+                        }
+                    },
+                    {
+                        "Prowlarr": {
+                            "icon": "prowlarr.png",
+                            "href": f"http://{ip}:9696",
+                            "description": "Indexer Management",
+                        }
+                    },
+                ]
+            },
+        ]
+
+        # Add request manager if configured
+        req_mgr = self.config.request_manager
+        if req_mgr != "none":
+            req_ports = {"overseerr": 5055, "jellyseerr": 5055, "ombi": 3579}
+            services[0]["Media"].append({
+                req_mgr.title(): {
+                    "icon": f"{req_mgr}.png",
+                    "href": f"http://{ip}:{req_ports.get(req_mgr, 5055)}",
+                    "description": "Request Manager",
+                }
+            })
+
+        # Add downloaders
+        downloaders = []
+        if self.config.enable_torrents:
+            downloaders.append({
+                "qBittorrent": {
+                    "icon": "qbittorrent.png",
+                    "href": f"http://{ip}:8080",
+                    "description": "Torrent Client",
+                }
+            })
+        if self.config.enable_usenet:
+            downloaders.append({
+                "SABnzbd": {
+                    "icon": "sabnzbd.png",
+                    "href": f"http://{ip}:8080",
+                    "description": "Usenet Client",
+                }
+            })
+        if downloaders:
+            services.append({"Downloads": downloaders})
+
+        # Write services.yaml
+        with open(homepage_dir / "services.yaml", "w") as f:
+            yaml.dump(services, f, default_flow_style=False, sort_keys=False)
+
+        # Write settings.yaml
+        settings = {
+            "title": "AstroMediaServer",
+            "background": {
+                "image": "",
+                "blur": "sm",
+                "opacity": 50,
+            },
+            "cardBlur": "sm",
+            "theme": "dark",
+            "color": "slate",
+            "headerStyle": "clean",
+            "layout": {
+                "Media": {"style": "row", "columns": 2},
+                "Management": {"style": "row", "columns": 4},
+                "Downloads": {"style": "row", "columns": 2},
+            },
+        }
+        with open(homepage_dir / "settings.yaml", "w") as f:
+            yaml.dump(settings, f, default_flow_style=False, sort_keys=False)
+
+        # Write widgets.yaml (system resources)
+        widgets = [
+            {"resources": {"cpu": True, "memory": True, "disk": "/"}},
+            {"search": {"provider": "duckduckgo", "target": "_blank"}},
+        ]
+        with open(homepage_dir / "widgets.yaml", "w") as f:
+            yaml.dump(widgets, f, default_flow_style=False, sort_keys=False)
+
+        # Write empty bookmarks.yaml
+        with open(homepage_dir / "bookmarks.yaml", "w") as f:
+            f.write("# Add your bookmarks here\n[]")
+
+        # Set ownership
+        for f in homepage_dir.iterdir():
+            os.chown(f, int(self.config.puid), int(self.config.pgid))
+        os.chown(homepage_dir, int(self.config.puid), int(self.config.pgid))
+
     def deploy_stack(self) -> bool:
         """Deploy the Docker stack."""
         self.ui.msgbox("Deploying services...\n\nThis may take several minutes as container images are downloaded.", height=10)
@@ -696,6 +837,7 @@ Enjoy your media server!
         try:
             self.create_directories()
             self.generate_compose()
+            self.generate_homepage_config()
 
             if self.deploy_stack():
                 self.show_completion()
