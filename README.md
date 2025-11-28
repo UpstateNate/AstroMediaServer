@@ -1,36 +1,31 @@
-# AstroMediaServer
+<p align="center">
+  <img src="assets/images/logo.png" alt="AstroMediaServer Logo" width="400">
+</p>
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Ubuntu](https://img.shields.io/badge/Ubuntu-24.04%20LTS-E95420?logo=ubuntu&logoColor=white)](https://ubuntu.com/)
-[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)](https://docs.docker.com/compose/)
+<h1 align="center">AstroMediaServer</h1>
 
-> **A turnkey Linux distribution for deploying your Home Media Empire**
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"></a>
+  <a href="https://ubuntu.com/"><img src="https://img.shields.io/badge/Ubuntu-24.04%20LTS-E95420?logo=ubuntu&logoColor=white" alt="Ubuntu"></a>
+  <a href="https://docs.docker.com/compose/"><img src="https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white" alt="Docker"></a>
+</p>
 
-AstroMediaServer (AMS) transforms commodity hardware into a fully-configured media server with zero Linux knowledge required. Boot the ISO, answer a few questions, and your personal streaming service is ready.
+<p align="center">
+  <strong>A turnkey Linux distribution for deploying your Home Media Empire</strong>
+</p>
 
-```
-        ___        __
-       /   |  ___ / /_ _____ ____
-      / /| | / __// __// ___// __ \
-     / ___ |(__  ) /_ / /   / /_/ /
-    /_/  |_/____/\__//_/    \____/
-       __  ___         ___        _____
-      /  |/  /___  ___/ (_)__ _  / ___/___  ____ _  _____ ____
-     / /|_/ // _ \/ _  / // _ `/ \__ \/ _ \/ __/| |/ / _ \/ __/
-    /_/  /_/ \___/\_,_/_/ \_,_/ ___/ /\___/_/   |___/\___/_/
-                              /____/
-```
+<p align="center">
+  AstroMediaServer (AMS) transforms commodity hardware into a fully-configured media server<br>
+  with zero Linux knowledge required. Boot the ISO, answer a few questions, and your personal streaming service is ready.
+</p>
 
 ## Features
 
 - **Zero-Config Install** - Boots to a friendly TUI wizard, no command line required
 - **Choose Your Stack** - Pick from Plex, Jellyfin, or Emby as your media server
-- **Complete Arr Suite** - Radarr, Sonarr, Lidarr, Readarr, Prowlarr, and Bazarr pre-configured
+- **Complete Arr Suite** - Radarr, Sonarr, Lidarr, Readarr, and Prowlarr pre-configured
 - **Flexible Downloads** - Support for both torrents (qBittorrent) and Usenet (SABnzbd/NZBGet)
-- **VPN Integration** - Route download traffic through gluetun (NordVPN, ExpressVPN, PIA, etc.)
-- **Hardware Transcoding** - Auto-detect and configure NVIDIA GPU or Intel QuickSync
-- **Modern Dashboard** - Homepage with auto-generated service widgets, or Heimdall
-- **Extra Services** - Optional Overseerr (requests), Tautulli (stats), Portainer (management)
+- **Modern Dashboard** - Homepage or Heimdall for easy service access
 - **Auto-Updates** - Watchtower keeps all containers current
 - **Disposable OS** - All data lives in Docker volumes; reinstall without losing config
 
@@ -94,8 +89,6 @@ passwd
 
 ## Application Stack
 
-### Core Services (Always Installed)
-
 | Category | Options | Default Ports |
 |----------|---------|---------------|
 | **Media Server** | Plex / Jellyfin / Emby | 32400 / 8096 |
@@ -106,19 +99,8 @@ passwd
 | **Indexers** | Prowlarr | 9696 |
 | **Torrents** | qBittorrent | 8080 |
 | **Usenet** | SABnzbd / NZBGet | 8080 / 6789 |
-| **Gateway** | Traefik / Nginx Proxy Manager | 80, 443, 81 |
+| **Gateway** | Traefik / Nginx Proxy Manager | 80, 443 |
 | **Dashboard** | Homepage / Heimdall | 3000 |
-| **Updates** | Watchtower | - |
-
-### Optional Services
-
-| Service | Function | Port |
-|---------|----------|------|
-| **Bazarr** | Automatic subtitle downloads | 6767 |
-| **Overseerr** | Media request management | 5055 |
-| **Tautulli** | Plex/media statistics | 8181 |
-| **Portainer** | Docker container management | 9000 |
-| **Gluetun** | VPN container for downloads | - |
 
 ## Directory Structure
 
@@ -186,14 +168,10 @@ docker compose pull && docker compose up -d
 - [x] Phase 2: TUI wizard and Docker Compose generator
 - [x] Phase 3: systemd integration
 - [x] Phase 4: Branding and polish
-- [x] Hardware transcoding support (NVIDIA/Intel QSV)
-- [x] VPN integration for downloaders (gluetun)
-- [x] Extra services (Bazarr, Overseerr, Tautulli, Portainer)
-- [x] Auto-generated Homepage dashboard config
+- [ ] Hardware transcoding support (NVIDIA/Intel QSV)
+- [ ] VPN integration for downloaders
 - [ ] Backup/restore functionality
 - [ ] Web-based post-install configuration
-- [ ] Storage/drive mount configuration wizard
-- [ ] Arr app API key auto-integration
 
 ## License
 

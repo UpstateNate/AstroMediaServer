@@ -37,18 +37,6 @@ class UserConfig:
     pgid: str = DEFAULT_PGID
     enable_usenet: bool = False
     enable_torrents: bool = True
-    # New features
-    enable_vpn: bool = False
-    vpn_provider: str = ""
-    vpn_username: str = ""
-    vpn_password: str = ""
-    extra_services: list = None  # Bazarr, Overseerr, Tautulli, Portainer
-    enable_transcoding: bool = False
-    transcoding_type: str = ""  # nvidia, intel, none
-
-    def __post_init__(self):
-        if self.extra_services is None:
-            self.extra_services = []
 
 
 class WhiptailUI:
@@ -133,7 +121,6 @@ class ComposeGenerator:
         "lidarr": "lscr.io/linuxserver/lidarr:latest",
         "readarr": "lscr.io/linuxserver/readarr:latest",
         "prowlarr": "lscr.io/linuxserver/prowlarr:latest",
-        "bazarr": "lscr.io/linuxserver/bazarr:latest",
         # Downloaders
         "qbittorrent": "lscr.io/linuxserver/qbittorrent:latest",
         "sabnzbd": "lscr.io/linuxserver/sabnzbd:latest",
@@ -146,12 +133,6 @@ class ComposeGenerator:
         "heimdall": "lscr.io/linuxserver/heimdall:latest",
         # Utilities
         "watchtower": "containrrr/watchtower:latest",
-        "portainer": "portainer/portainer-ce:latest",
-        # Extras
-        "overseerr": "lscr.io/linuxserver/overseerr:latest",
-        "tautulli": "lscr.io/linuxserver/tautulli:latest",
-        # VPN
-        "gluetun": "qmcgaw/gluetun:latest",
     }
 
     def __init__(self, config: UserConfig):
@@ -336,108 +317,6 @@ class ComposeGenerator:
             },
         }
 
-    def _add_extra_services(self) -> None:
-        """Add optional extra services (Bazarr, Overseerr, Tautulli, Portainer)."""
-        if "bazarr" in self.config.extra_services:
-            self.services["bazarr"] = {
-                "image": self.IMAGES["bazarr"],
-                "container_name": "bazarr",
-                "restart": "unless-stopped",
-                "environment": self._base_env(),
-                "ports": ["6767:6767"],
-                "volumes": [
-                    f"{CONFIG_DIR}/bazarr:/config",
-                    f"{MEDIA_DIR}/movies:/movies",
-                    f"{MEDIA_DIR}/tv:/tv",
-                ],
-            }
-
-        if "overseerr" in self.config.extra_services:
-            self.services["overseerr"] = {
-                "image": self.IMAGES["overseerr"],
-                "container_name": "overseerr",
-                "restart": "unless-stopped",
-                "environment": self._base_env(),
-                "ports": ["5055:5055"],
-                "volumes": [f"{CONFIG_DIR}/overseerr:/config"],
-            }
-
-        if "tautulli" in self.config.extra_services:
-            self.services["tautulli"] = {
-                "image": self.IMAGES["tautulli"],
-                "container_name": "tautulli",
-                "restart": "unless-stopped",
-                "environment": self._base_env(),
-                "ports": ["8181:8181"],
-                "volumes": [f"{CONFIG_DIR}/tautulli:/config"],
-            }
-
-        if "portainer" in self.config.extra_services:
-            self.services["portainer"] = {
-                "image": self.IMAGES["portainer"],
-                "container_name": "portainer",
-                "restart": "unless-stopped",
-                "ports": ["9000:9000"],
-                "volumes": [
-                    "/var/run/docker.sock:/var/run/docker.sock",
-                    f"{CONFIG_DIR}/portainer:/data",
-                ],
-            }
-
-    def _add_vpn(self) -> None:
-        """Add VPN container (gluetun) for download clients."""
-        if not self.config.enable_vpn:
-            return
-
-        self.services["gluetun"] = {
-            "image": self.IMAGES["gluetun"],
-            "container_name": "gluetun",
-            "restart": "unless-stopped",
-            "cap_add": ["NET_ADMIN"],
-            "devices": ["/dev/net/tun:/dev/net/tun"],
-            "environment": {
-                "VPN_SERVICE_PROVIDER": self.config.vpn_provider,
-                "VPN_TYPE": "openvpn",
-                "OPENVPN_USER": self.config.vpn_username,
-                "OPENVPN_PASSWORD": self.config.vpn_password,
-                "TZ": self.config.timezone,
-            },
-            "ports": [
-                "8080:8080",      # qBittorrent WebUI
-                "6881:6881",      # qBittorrent
-                "6881:6881/udp",
-            ],
-            "volumes": [f"{CONFIG_DIR}/gluetun:/gluetun"],
-        }
-
-        # Modify qbittorrent to use VPN network
-        if "qbittorrent" in self.services:
-            # Remove ports from qbittorrent (handled by gluetun)
-            self.services["qbittorrent"].pop("ports", None)
-            self.services["qbittorrent"]["network_mode"] = "service:gluetun"
-            self.services["qbittorrent"]["depends_on"] = ["gluetun"]
-
-    def _configure_transcoding(self) -> None:
-        """Configure hardware transcoding for media server."""
-        if not self.config.enable_transcoding:
-            return
-
-        server = self.config.media_server
-        if server not in self.services:
-            return
-
-        if self.config.transcoding_type == "nvidia":
-            # Add NVIDIA GPU support
-            self.services[server]["runtime"] = "nvidia"
-            self.services[server]["environment"]["NVIDIA_VISIBLE_DEVICES"] = "all"
-            if server == "jellyfin":
-                self.services[server]["environment"]["NVIDIA_DRIVER_CAPABILITIES"] = "all"
-        elif self.config.transcoding_type == "intel":
-            # Add Intel QuickSync support (vaapi)
-            if "devices" not in self.services[server]:
-                self.services[server]["devices"] = []
-            self.services[server]["devices"].append("/dev/dri:/dev/dri")
-
     def generate(self) -> dict:
         """Generate the complete docker-compose configuration."""
         self._add_media_server()
@@ -446,9 +325,6 @@ class ComposeGenerator:
         self._add_gateway()
         self._add_dashboard()
         self._add_watchtower()
-        self._add_extra_services()
-        self._add_vpn()
-        self._configure_transcoding()
 
         return {
             "version": "3.8",
@@ -459,156 +335,6 @@ class ComposeGenerator:
                 }
             },
         }
-
-    def generate_homepage_config(self) -> None:
-        """Generate Homepage dashboard configuration files."""
-        if self.config.dashboard != "homepage":
-            return
-
-        homepage_dir = CONFIG_DIR / "homepage"
-        homepage_dir.mkdir(parents=True, exist_ok=True)
-
-        # Generate services.yaml
-        services = self._build_homepage_services()
-        with open(homepage_dir / "services.yaml", "w") as f:
-            yaml.dump(services, f, default_flow_style=False, sort_keys=False)
-
-        # Generate settings.yaml
-        settings = {
-            "title": "AstroMediaServer",
-            "theme": "dark",
-            "color": "slate",
-            "headerStyle": "boxed",
-            "layout": {
-                "Media": {"style": "row", "columns": 3},
-                "Downloads": {"style": "row", "columns": 2},
-                "Management": {"style": "row", "columns": 4},
-                "System": {"style": "row", "columns": 2},
-            },
-        }
-        with open(homepage_dir / "settings.yaml", "w") as f:
-            yaml.dump(settings, f, default_flow_style=False, sort_keys=False)
-
-        # Generate widgets.yaml
-        widgets = [
-            {"resources": {"cpu": True, "memory": True, "disk": "/"}},
-            {"datetime": {"text_size": "xl", "format": {"dateStyle": "long", "timeStyle": "short"}}},
-        ]
-        with open(homepage_dir / "widgets.yaml", "w") as f:
-            yaml.dump(widgets, f, default_flow_style=False, sort_keys=False)
-
-        # Generate docker.yaml for container integration
-        docker_config = {"my-docker": {"socket": "/var/run/docker.sock"}}
-        with open(homepage_dir / "docker.yaml", "w") as f:
-            yaml.dump(docker_config, f, default_flow_style=False, sort_keys=False)
-
-    def _build_homepage_services(self) -> list:
-        """Build Homepage services configuration."""
-        services = []
-
-        # Media section
-        media_services = []
-        server = self.config.media_server
-        port = {"jellyfin": 8096, "plex": 32400, "emby": 8096}.get(server, 8096)
-        media_services.append({
-            server.title(): {
-                "icon": f"{server}.png",
-                "href": f"http://{{{{HOMEPAGE_VAR_SERVER_IP}}}}:{port}",
-                "description": "Media Server",
-                "container": server,
-                "server": "my-docker",
-            }
-        })
-
-        if "overseerr" in self.config.extra_services:
-            media_services.append({
-                "Overseerr": {
-                    "icon": "overseerr.png",
-                    "href": "http://{{HOMEPAGE_VAR_SERVER_IP}}:5055",
-                    "description": "Media Requests",
-                    "container": "overseerr",
-                    "server": "my-docker",
-                }
-            })
-
-        if "tautulli" in self.config.extra_services:
-            media_services.append({
-                "Tautulli": {
-                    "icon": "tautulli.png",
-                    "href": "http://{{HOMEPAGE_VAR_SERVER_IP}}:8181",
-                    "description": "Plex Statistics",
-                    "container": "tautulli",
-                    "server": "my-docker",
-                }
-            })
-
-        services.append({"Media": media_services})
-
-        # Downloads section
-        download_services = []
-        if self.config.enable_torrents:
-            download_services.append({
-                "qBittorrent": {
-                    "icon": "qbittorrent.png",
-                    "href": "http://{{HOMEPAGE_VAR_SERVER_IP}}:8080",
-                    "description": "Torrent Client",
-                    "container": "qbittorrent",
-                    "server": "my-docker",
-                }
-            })
-        if self.config.enable_usenet:
-            client = "sabnzbd" if self.config.downloader == "sabnzbd" else "nzbget"
-            port = 8080 if client == "sabnzbd" else 6789
-            download_services.append({
-                client.title(): {
-                    "icon": f"{client}.png",
-                    "href": f"http://{{{{HOMEPAGE_VAR_SERVER_IP}}}}:{port}",
-                    "description": "Usenet Client",
-                    "container": client,
-                    "server": "my-docker",
-                }
-            })
-
-        if download_services:
-            services.append({"Downloads": download_services})
-
-        # Management section (Arr suite)
-        management_services = [
-            {"Radarr": {"icon": "radarr.png", "href": "http://{{HOMEPAGE_VAR_SERVER_IP}}:7878", "description": "Movies", "container": "radarr", "server": "my-docker"}},
-            {"Sonarr": {"icon": "sonarr.png", "href": "http://{{HOMEPAGE_VAR_SERVER_IP}}:8989", "description": "TV Shows", "container": "sonarr", "server": "my-docker"}},
-            {"Lidarr": {"icon": "lidarr.png", "href": "http://{{HOMEPAGE_VAR_SERVER_IP}}:8686", "description": "Music", "container": "lidarr", "server": "my-docker"}},
-            {"Readarr": {"icon": "readarr.png", "href": "http://{{HOMEPAGE_VAR_SERVER_IP}}:8787", "description": "Books", "container": "readarr", "server": "my-docker"}},
-            {"Prowlarr": {"icon": "prowlarr.png", "href": "http://{{HOMEPAGE_VAR_SERVER_IP}}:9696", "description": "Indexers", "container": "prowlarr", "server": "my-docker"}},
-        ]
-
-        if "bazarr" in self.config.extra_services:
-            management_services.append({
-                "Bazarr": {"icon": "bazarr.png", "href": "http://{{HOMEPAGE_VAR_SERVER_IP}}:6767", "description": "Subtitles", "container": "bazarr", "server": "my-docker"}
-            })
-
-        services.append({"Management": management_services})
-
-        # System section
-        system_services = []
-        if "portainer" in self.config.extra_services:
-            system_services.append({
-                "Portainer": {"icon": "portainer.png", "href": "http://{{HOMEPAGE_VAR_SERVER_IP}}:9000", "description": "Container Management", "container": "portainer", "server": "my-docker"}
-            })
-
-        gateway = self.config.gateway
-        if gateway == "traefik":
-            system_services.append({
-                "Traefik": {"icon": "traefik.png", "href": "http://{{HOMEPAGE_VAR_SERVER_IP}}:8081", "description": "Reverse Proxy", "container": "traefik", "server": "my-docker"}
-            })
-        elif gateway == "nginx-proxy-manager":
-            system_services.append({
-                "NPM": {"icon": "nginx-proxy-manager.png", "href": "http://{{HOMEPAGE_VAR_SERVER_IP}}:81", "description": "Reverse Proxy", "container": "nginx-proxy-manager", "server": "my-docker"}
-            })
-
-        if system_services:
-            services.append({"System": system_services})
-
-        return services
 
 
 class SetupWizard:
@@ -752,141 +478,8 @@ Press OK to continue or Cancel to exit.
             return True
         return False
 
-    def select_extra_services(self) -> bool:
-        """Let user choose additional services."""
-        choices = [
-            ("bazarr", "Automatic subtitle downloads", "ON"),
-            ("overseerr", "Media request management", "OFF"),
-            ("tautulli", "Plex/media statistics", "OFF"),
-            ("portainer", "Docker container management", "ON"),
-        ]
-
-        result = self.ui.checklist(
-            "Select additional services:\n(Space to toggle, Enter to confirm)",
-            choices,
-            height=16,
-            list_height=6,
-        )
-
-        if result is not None:
-            self.config.extra_services = result
-            return True
-        return False
-
-    def configure_vpn(self) -> bool:
-        """Configure VPN for download clients."""
-        if not self.config.enable_torrents:
-            return True
-
-        if not self.ui.yesno(
-            "Would you like to route download traffic\nthrough a VPN for privacy?\n\n"
-            "This requires a VPN subscription\n(NordVPN, ExpressVPN, PIA, etc.)",
-            height=12,
-        ):
-            self.config.enable_vpn = False
-            return True
-
-        self.config.enable_vpn = True
-
-        # Select VPN provider
-        providers = [
-            ("nordvpn", "NordVPN"),
-            ("expressvpn", "ExpressVPN"),
-            ("private internet access", "Private Internet Access (PIA)"),
-            ("surfshark", "Surfshark"),
-            ("mullvad", "Mullvad"),
-            ("protonvpn", "ProtonVPN"),
-            ("windscribe", "Windscribe"),
-            ("custom", "Other OpenVPN provider"),
-        ]
-
-        provider = self.ui.menu(
-            "Select your VPN provider:",
-            providers,
-            height=18,
-            menu_height=10,
-        )
-
-        if not provider:
-            self.config.enable_vpn = False
-            return True
-
-        self.config.vpn_provider = provider
-
-        # Get credentials
-        username = self.ui.inputbox("Enter VPN username/email:")
-        if not username:
-            self.config.enable_vpn = False
-            return True
-        self.config.vpn_username = username
-
-        password = self.ui.inputbox("Enter VPN password:")
-        if not password:
-            self.config.enable_vpn = False
-            return True
-        self.config.vpn_password = password
-
-        return True
-
-    def detect_hardware_transcoding(self) -> bool:
-        """Detect and configure hardware transcoding."""
-        # Check for NVIDIA GPU
-        nvidia_available = os.path.exists("/dev/nvidia0") or self._check_nvidia()
-        # Check for Intel iGPU (vaapi)
-        intel_available = os.path.exists("/dev/dri/renderD128")
-
-        if not nvidia_available and not intel_available:
-            self.ui.msgbox(
-                "No compatible GPU detected for\nhardware transcoding.\n\n"
-                "Software transcoding will be used.\n\n"
-                "Supported: NVIDIA GPUs, Intel QuickSync",
-                height=12,
-            )
-            return True
-
-        options = []
-        if nvidia_available:
-            options.append(("nvidia", "NVIDIA GPU (NVENC)"))
-        if intel_available:
-            options.append(("intel", "Intel QuickSync (VAAPI)"))
-        options.append(("none", "Use software transcoding"))
-
-        if len(options) == 1:
-            choice = options[0][0]
-        else:
-            choice = self.ui.menu(
-                "Hardware transcoding detected!\nSelect acceleration method:",
-                options,
-                height=14,
-                menu_height=5,
-            )
-
-        if choice and choice != "none":
-            self.config.enable_transcoding = True
-            self.config.transcoding_type = choice
-        else:
-            self.config.enable_transcoding = False
-
-        return True
-
-    def _check_nvidia(self) -> bool:
-        """Check if NVIDIA drivers are available."""
-        try:
-            result = subprocess.run(
-                ["nvidia-smi"],
-                capture_output=True,
-                timeout=5,
-            )
-            return result.returncode == 0
-        except Exception:
-            return False
-
     def show_summary(self) -> bool:
         """Display configuration summary."""
-        extras = ", ".join(self.config.extra_services) if self.config.extra_services else "None"
-        vpn_status = f"Enabled ({self.config.vpn_provider})" if self.config.enable_vpn else "Disabled"
-        transcode = self.config.transcoding_type.upper() if self.config.enable_transcoding else "Software"
-
         summary = f"""
 Configuration Summary:
 
@@ -897,11 +490,6 @@ Dashboard:     {self.config.dashboard.title()}
 Download Methods:
   Torrents:    {'Enabled' if self.config.enable_torrents else 'Disabled'}
   Usenet:      {'Enabled' if self.config.enable_usenet else 'Disabled'}
-  VPN:         {vpn_status}
-
-Hardware Transcoding: {transcode}
-
-Extra Services: {extras}
 
 Timezone:      {self.config.timezone}
 
@@ -911,7 +499,7 @@ Always Included:
 
 Proceed with this configuration?
 """
-        return self.ui.yesno(summary, height=28, width=55)
+        return self.ui.yesno(summary, height=22, width=50)
 
     def create_directories(self) -> None:
         """Create required directory structure."""
@@ -931,16 +519,11 @@ Proceed with this configuration?
 
     def generate_compose(self) -> None:
         """Generate docker-compose.yml file."""
-        self.generator = ComposeGenerator(self.config)
-        compose_config = self.generator.generate()
+        generator = ComposeGenerator(self.config)
+        compose_config = generator.generate()
 
         with open(COMPOSE_FILE, "w") as f:
             yaml.dump(compose_config, f, default_flow_style=False, sort_keys=False)
-
-    def generate_homepage_config(self) -> None:
-        """Generate Homepage dashboard configuration."""
-        if hasattr(self, 'generator'):
-            self.generator.generate_homepage_config()
 
     def deploy_stack(self) -> bool:
         """Deploy the Docker stack."""
@@ -1019,9 +602,6 @@ Enjoy your media server!
             self.select_downloader,
             self.select_gateway,
             self.select_dashboard,
-            self.select_extra_services,
-            self.configure_vpn,
-            self.detect_hardware_transcoding,
             self.configure_timezone,
             self.show_summary,
         ]
@@ -1035,7 +615,6 @@ Enjoy your media server!
         try:
             self.create_directories()
             self.generate_compose()
-            self.generate_homepage_config()
 
             if self.deploy_stack():
                 self.show_completion()
