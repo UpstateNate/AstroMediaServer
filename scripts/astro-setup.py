@@ -50,14 +50,16 @@ class WhiptailUI:
         """Run whiptail command and return (returncode, output)."""
         cmd = ["whiptail", "--title", WhiptailUI.TITLE, "--backtitle", WhiptailUI.BACKTITLE] + args
         try:
-            result = subprocess.run(
-                cmd,
-                input=input_text.encode() if input_text else None,
-                capture_output=True,
-                text=False,
-            )
-            # whiptail outputs to stderr
-            return result.returncode, result.stderr.decode().strip()
+            # Whiptail needs direct terminal access for display
+            # It outputs user selections to stderr
+            with open("/dev/tty", "r") as tty_in, open("/dev/tty", "w") as tty_out:
+                result = subprocess.run(
+                    cmd,
+                    stdin=tty_in,
+                    stdout=tty_out,
+                    stderr=subprocess.PIPE,
+                )
+                return result.returncode, result.stderr.decode().strip()
         except FileNotFoundError:
             print("Error: whiptail not found. Please install it.")
             sys.exit(1)
