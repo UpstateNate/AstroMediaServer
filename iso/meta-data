@@ -1,0 +1,2 @@
+# Meta-data file for cloud-init (can be empty but must exist)
+instance-id: astro-media-server

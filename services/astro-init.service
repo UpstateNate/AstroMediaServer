@@ -1,0 +1,21 @@
+[Unit]
+Description=AstroMediaServer First Boot Setup
+Documentation=https://github.com/user/astro-media-server
+After=network-online.target docker.service
+Wants=network-online.target docker.service
+ConditionPathExists=!/opt/astro/.setup-complete
+
+[Service]
+Type=oneshot
+ExecStart=/opt/astro/astro-init.sh
+ExecStartPost=/usr/bin/touch /opt/astro/.setup-complete
+RemainAfterExit=yes
+StandardInput=tty
+StandardOutput=tty
+StandardError=tty
+TTYPath=/dev/tty1
+TTYReset=yes
+TTYVHangup=yes
+
+[Install]
+WantedBy=multi-user.target

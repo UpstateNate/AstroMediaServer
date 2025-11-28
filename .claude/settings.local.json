@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:canonical-subiquity.readthedocs-hosted.com)",
+      "WebFetch(domain:docs.linuxserver.io)",
+      "WebFetch(domain:askubuntu.com)",
+      "WebFetch(domain:github.com)",
+      "Bash(git init:*)",
+      "Bash(openssl passwd:*)",
+      "Bash(chmod:*)",
+      "Bash(git add:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

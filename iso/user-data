@@ -1,0 +1,81 @@
+#cloud-config
+autoinstall:
+  version: 1
+
+  # Locale and keyboard configuration
+  locale: en_US.UTF-8
+  keyboard:
+    layout: us
+
+  # Refresh installer to latest version
+  refresh-installer:
+    update: true
+
+  # Network configuration (DHCP by default)
+  network:
+    version: 2
+    ethernets:
+      all-en:
+        match:
+          name: "en*"
+        dhcp4: true
+      all-eth:
+        match:
+          name: "eth*"
+        dhcp4: true
+
+  # Storage configuration - auto-partition entire disk with LVM
+  storage:
+    layout:
+      name: lvm
+      sizing-policy: all
+
+  # User account configuration
+  identity:
+    hostname: astro-server
+    username: astro-admin
+    # Default password: "astro" - user should change on first login
+    password: "$6$efYnxDJLnncnEMYB$Acnt4LhHmO/z5kiYWEkdPgMxIxZh5ZfBdXckwIOGNR2zAOppBazOQIlgsVaN99z4PJL.eIZhU5qAIIBzzece4."
+
+  # SSH configuration
+  ssh:
+    install-server: true
+    allow-pw: true
+
+  # Packages to install
+  packages:
+    - docker.io
+    - docker-compose-v2
+    - python3
+    - python3-pip
+    - whiptail
+    - git
+    - curl
+    - htop
+    - net-tools
+    - openssh-server
+
+  # Late commands run in the installed system (chroot)
+  late-commands:
+    # Add astro-admin to docker group
+    - curtin in-target --target=/target -- usermod -aG docker astro-admin
+
+    # Create astro directories
+    - curtin in-target --target=/target -- mkdir -p /opt/astro/{config,media,torrents,usenet}
+    - curtin in-target --target=/target -- chown -R 1000:1000 /opt/astro
+
+    # Copy astro-init script (will be added to ISO)
+    - cp /cdrom/astro/astro-init.sh /target/opt/astro/astro-init.sh
+    - cp /cdrom/astro/astro-setup.py /target/opt/astro/astro-setup.py
+    - chmod +x /target/opt/astro/astro-init.sh
+    - chmod +x /target/opt/astro/astro-setup.py
+
+    # Install systemd service for first boot
+    - cp /cdrom/astro/astro-init.service /target/etc/systemd/system/astro-init.service
+    - curtin in-target --target=/target -- systemctl enable astro-init.service
+
+    # Enable docker service
+    - curtin in-target --target=/target -- systemctl enable docker
+
+  # Automatic reboot after installation
+  shutdown: reboot
