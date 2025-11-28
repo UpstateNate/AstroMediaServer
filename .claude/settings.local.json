@@ -16,7 +16,8 @@
       "Bash(sudo apt update:*)",
       "Bash(sudo apt install:*)",
       "Bash(gh repo create:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(sudo docker ps:*)"
     ],
     "deny": [],
     "ask": []

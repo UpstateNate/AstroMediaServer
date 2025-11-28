@@ -121,7 +121,7 @@ class ComposeGenerator:
         "radarr": "lscr.io/linuxserver/radarr:latest",
         "sonarr": "lscr.io/linuxserver/sonarr:latest",
         "lidarr": "lscr.io/linuxserver/lidarr:latest",
-        "readarr": "lscr.io/linuxserver/readarr:latest",
+        "readarr": "lscr.io/linuxserver/readarr:develop",  # Readarr is beta, no :latest
         "prowlarr": "lscr.io/linuxserver/prowlarr:latest",
         # Downloaders
         "qbittorrent": "lscr.io/linuxserver/qbittorrent:latest",
@@ -329,7 +329,6 @@ class ComposeGenerator:
         self._add_watchtower()
 
         return {
-            "version": "3.8",
             "services": self.services,
             "networks": {
                 "default": {
