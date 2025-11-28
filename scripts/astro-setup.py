@@ -122,7 +122,7 @@ class ComposeGenerator:
         "radarr": "lscr.io/linuxserver/radarr:latest",
         "sonarr": "lscr.io/linuxserver/sonarr:latest",
         "lidarr": "lscr.io/linuxserver/lidarr:latest",
-        "readarr": "lscr.io/linuxserver/readarr:develop",  # Readarr is beta, no :latest
+        # Note: Readarr removed - LinuxServer deprecated the image (project retired)
         "prowlarr": "lscr.io/linuxserver/prowlarr:latest",
         # Downloaders
         "qbittorrent": "lscr.io/linuxserver/qbittorrent:latest",
@@ -182,12 +182,12 @@ class ComposeGenerator:
         self.services[server] = base
 
     def _add_arr_suite(self) -> None:
-        """Add Radarr, Sonarr, Lidarr, Readarr, Prowlarr."""
+        """Add Radarr, Sonarr, Lidarr, Prowlarr."""
+        # Note: Readarr removed - LinuxServer deprecated the image
         arr_configs = {
             "radarr": {"port": "7878:7878"},
             "sonarr": {"port": "8989:8989"},
             "lidarr": {"port": "8686:8686"},
-            "readarr": {"port": "8787:8787"},
             "prowlarr": {"port": "9696:9696"},
         }
 
@@ -195,7 +195,7 @@ class ComposeGenerator:
             volumes = [f"{CONFIG_DIR}/{name}:/config"]
 
             # Add media volumes for content managers
-            if name in ["radarr", "sonarr", "lidarr", "readarr"]:
+            if name in ["radarr", "sonarr", "lidarr"]:
                 volumes.extend([
                     f"{MEDIA_DIR}/movies:/movies",
                     f"{MEDIA_DIR}/tv:/tv",
@@ -561,7 +561,7 @@ Download Methods:
 Timezone:      {self.config.timezone}
 
 Always Included:
-  Radarr, Sonarr, Lidarr, Readarr,
+  Radarr, Sonarr, Lidarr,
   Prowlarr, Watchtower
 
 Proceed with this configuration?
