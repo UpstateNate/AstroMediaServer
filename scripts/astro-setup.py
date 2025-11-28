@@ -299,7 +299,10 @@ class ComposeGenerator:
                     f"{CONFIG_DIR}/homepage:/app/config",
                     "/var/run/docker.sock:/var/run/docker.sock:ro",
                 ],
-                "environment": self._base_env(),
+                "environment": {
+                    **self._base_env(),
+                    "HOMEPAGE_ALLOWED_HOSTS": "*",  # Allow all hosts
+                },
             }
         elif dashboard == "heimdall":
             self.services["heimdall"] = {
