@@ -9,7 +9,14 @@
       "Bash(git init:*)",
       "Bash(openssl passwd:*)",
       "Bash(chmod:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(command -v gh:*)",
+      "Bash(gh auth status:*)",
+      "Bash(sudo apt update:*)",
+      "Bash(sudo apt install:*)",
+      "Bash(gh repo create:*)",
+      "Bash(git push:*)"
     ],
     "deny": [],
     "ask": []

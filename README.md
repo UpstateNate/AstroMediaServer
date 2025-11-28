@@ -44,7 +44,7 @@ AstroMediaServer (AMS) transforms commodity hardware into a fully-configured med
 
 ```bash
 # Clone the repository
-git clone https://github.com/YOUR_USERNAME/AstroMediaServer.git
+git clone https://github.com/UpstateNate/AstroMediaServer.git
 cd AstroMediaServer
 
 # Install build dependencies (Ubuntu/Debian)
@@ -67,7 +67,7 @@ sudo apt install docker.io docker-compose-v2 python3 python3-pip whiptail git
 sudo systemctl enable --now docker
 
 # Clone the repository
-git clone https://github.com/YOUR_USERNAME/AstroMediaServer.git
+git clone https://github.com/UpstateNate/AstroMediaServer.git
 cd AstroMediaServer
 
 # Install Python dependencies
