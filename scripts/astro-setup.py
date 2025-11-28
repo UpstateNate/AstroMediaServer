@@ -29,6 +29,7 @@ class UserConfig:
     """Stores user selections from the wizard."""
 
     media_server: str = "jellyfin"
+    request_manager: str = "none"  # overseerr, jellyseerr, ombi, none
     downloader: str = "qbittorrent"
     gateway: str = "traefik"
     dashboard: str = "homepage"
@@ -133,6 +134,10 @@ class ComposeGenerator:
         # Dashboard
         "homepage": "ghcr.io/gethomepage/homepage:latest",
         "heimdall": "lscr.io/linuxserver/heimdall:latest",
+        # Request Managers
+        "overseerr": "lscr.io/linuxserver/overseerr:latest",
+        "jellyseerr": "fallenbagel/jellyseerr:latest",
+        "ombi": "lscr.io/linuxserver/ombi:latest",
         # Utilities
         "watchtower": "containrrr/watchtower:latest",
     }
@@ -306,6 +311,41 @@ class ComposeGenerator:
                 "environment": self._base_env(),
             }
 
+    def _add_request_manager(self) -> None:
+        """Add request manager (Overseerr/Jellyseerr/Ombi)."""
+        manager = self.config.request_manager
+
+        if manager == "none":
+            return
+
+        if manager == "overseerr":
+            self.services["overseerr"] = {
+                "image": self.IMAGES["overseerr"],
+                "container_name": "overseerr",
+                "restart": "unless-stopped",
+                "ports": ["5055:5055"],
+                "volumes": [f"{CONFIG_DIR}/overseerr:/config"],
+                "environment": self._base_env(),
+            }
+        elif manager == "jellyseerr":
+            self.services["jellyseerr"] = {
+                "image": self.IMAGES["jellyseerr"],
+                "container_name": "jellyseerr",
+                "restart": "unless-stopped",
+                "ports": ["5055:5055"],
+                "volumes": [f"{CONFIG_DIR}/jellyseerr:/app/config"],
+                "environment": self._base_env(),
+            }
+        elif manager == "ombi":
+            self.services["ombi"] = {
+                "image": self.IMAGES["ombi"],
+                "container_name": "ombi",
+                "restart": "unless-stopped",
+                "ports": ["3579:3579"],
+                "volumes": [f"{CONFIG_DIR}/ombi:/config"],
+                "environment": self._base_env(),
+            }
+
     def _add_watchtower(self) -> None:
         """Add Watchtower for automatic updates."""
         self.services["watchtower"] = {
@@ -324,6 +364,7 @@ class ComposeGenerator:
         self._add_media_server()
         self._add_arr_suite()
         self._add_downloader()
+        self._add_request_manager()
         self._add_gateway()
         self._add_dashboard()
         self._add_watchtower()
@@ -380,6 +421,27 @@ Press OK to continue or Cancel to exit.
 
         if result:
             self.config.media_server = result
+            return True
+        return False
+
+    def select_request_manager(self) -> bool:
+        """Let user choose request manager."""
+        choices = [
+            ("overseerr", "Modern request UI (best for Plex)"),
+            ("jellyseerr", "Request manager for Jellyfin"),
+            ("ombi", "Classic request manager (any server)"),
+            ("none", "Skip - no request manager"),
+        ]
+
+        result = self.ui.menu(
+            "Select a request manager:\n(Lets users request movies/shows)",
+            choices,
+            height=16,
+            menu_height=6,
+        )
+
+        if result:
+            self.config.request_manager = result
             return True
         return False
 
@@ -481,12 +543,16 @@ Press OK to continue or Cancel to exit.
 
     def show_summary(self) -> bool:
         """Display configuration summary."""
+        req_mgr = self.config.request_manager
+        req_mgr_display = "None" if req_mgr == "none" else req_mgr.title()
+
         summary = f"""
 Configuration Summary:
 
-Media Server:  {self.config.media_server.title()}
-Gateway:       {self.config.gateway.replace('-', ' ').title()}
-Dashboard:     {self.config.dashboard.title()}
+Media Server:     {self.config.media_server.title()}
+Request Manager:  {req_mgr_display}
+Gateway:          {self.config.gateway.replace('-', ' ').title()}
+Dashboard:        {self.config.dashboard.title()}
 
 Download Methods:
   Torrents:    {'Enabled' if self.config.enable_torrents else 'Disabled'}
@@ -500,7 +566,7 @@ Always Included:
 
 Proceed with this configuration?
 """
-        return self.ui.yesno(summary, height=22, width=50)
+        return self.ui.yesno(summary, height=24, width=52)
 
     def create_directories(self) -> None:
         """Create required directory structure."""
@@ -565,10 +631,20 @@ Proceed with this configuration?
             "homepage": 3000,
             "heimdall": 3000,
             "qbittorrent": 8080,
+            "overseerr": 5055,
+            "jellyseerr": 5055,
+            "ombi": 3579,
         }
 
         media_port = ports.get(self.config.media_server, 8096)
         dashboard_port = ports.get(self.config.dashboard, 3000)
+
+        # Build request manager line if configured
+        req_mgr = self.config.request_manager
+        req_mgr_line = ""
+        if req_mgr != "none":
+            req_port = ports.get(req_mgr, 5055)
+            req_mgr_line = f"\nRequests:      http://{ip}:{req_port}"
 
         completion_text = f"""
 Setup Complete!
@@ -578,7 +654,7 @@ Your services are now running.
 Access your server at:
 
 Dashboard:     http://{ip}:{dashboard_port}
-{self.config.media_server.title()}:      http://{ip}:{media_port}
+{self.config.media_server.title()}:      http://{ip}:{media_port}{req_mgr_line}
 Radarr:        http://{ip}:7878
 Sonarr:        http://{ip}:8989
 Prowlarr:      http://{ip}:9696
@@ -592,13 +668,14 @@ To manage services:
 
 Enjoy your media server!
 """
-        self.ui.msgbox(completion_text, height=26, width=55)
+        self.ui.msgbox(completion_text, height=28, width=55)
 
     def run(self) -> int:
         """Run the setup wizard."""
         steps = [
             self.show_welcome,
             self.select_media_server,
+            self.select_request_manager,
             self.select_download_method,
             self.select_downloader,
             self.select_gateway,
