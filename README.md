@@ -59,17 +59,17 @@ sudo apt install xorriso p7zip-full wget genisoimage
 ```bash
 # Install prerequisites
 sudo apt update
-sudo apt install docker.io docker-compose-v2 python3 python3-pip whiptail git
+sudo apt install docker.io docker-compose-v2 python3 python3-yaml whiptail git
 
 # Enable and start Docker
 sudo systemctl enable --now docker
 
+# Add your user to the docker group (logout/login required)
+sudo usermod -aG docker $USER
+
 # Clone the repository
 git clone https://github.com/UpstateNate/AstroMediaServer.git
 cd AstroMediaServer
-
-# Install Python dependencies
-pip3 install -r requirements.txt
 
 # Run the setup wizard
 sudo python3 scripts/astro-setup.py

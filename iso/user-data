@@ -47,7 +47,7 @@ autoinstall:
     - docker.io
     - docker-compose-v2
     - python3
-    - python3-pip
+    - python3-yaml
     - whiptail
     - git
     - curl

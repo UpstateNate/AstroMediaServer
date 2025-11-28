@@ -31,7 +31,7 @@ Thank you for your interest in contributing to AstroMediaServer! This document p
 sudo apt install xorriso p7zip-full wget genisoimage
 
 # Runtime dependencies (for testing)
-sudo apt install docker.io docker-compose-v2 python3 whiptail
+sudo apt install docker.io docker-compose-v2 python3 python3-yaml whiptail
 ```
 
 ### Testing the Setup Wizard
