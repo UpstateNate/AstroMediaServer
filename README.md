@@ -159,6 +159,7 @@ docker compose pull && docker compose up -d
 
 ## Documentation
 
+- [Setup Guide](docs/SETUP_GUIDE.md) - **Start here!** Connect all your services
 - [Project Charter](docs/CHARTER.md) - Full technical specification
 - [Contributing](CONTRIBUTING.md) - How to contribute
 

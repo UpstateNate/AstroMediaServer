@@ -581,6 +581,13 @@ Proceed with this configuration?
             MEDIA_DIR / "books",
             ASTRO_DIR / "torrents",
             ASTRO_DIR / "usenet",
+            # Usenet subdirectories for SABnzbd
+            ASTRO_DIR / "usenet" / "complete",
+            ASTRO_DIR / "usenet" / "incomplete",
+            ASTRO_DIR / "usenet" / "watch",
+            # Torrent subdirectories for qBittorrent
+            ASTRO_DIR / "torrents" / "complete",
+            ASTRO_DIR / "torrents" / "incomplete",
         ]
 
         for d in dirs:
