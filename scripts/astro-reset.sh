@@ -54,8 +54,16 @@ if [ -f "$COMPOSE_FILE" ]; then
     docker compose down -v --remove-orphans 2>/dev/null || true
     log_ok "Containers removed"
 else
-    log_info "No docker-compose.yml found, skipping container removal"
+    log_info "No docker-compose.yml found, skipping compose down"
 fi
+
+# Remove any orphaned astro containers by name
+log_info "Removing any orphaned containers..."
+CONTAINERS="homepage plex jellyfin emby radarr sonarr lidarr prowlarr sabnzbd nzbget qbittorrent traefik nginx-proxy-manager overseerr jellyseerr ombi watchtower heimdall"
+for container in $CONTAINERS; do
+    docker rm -f "$container" 2>/dev/null || true
+done
+log_ok "Orphaned containers cleaned up"
 
 # Remove astro directory contents
 if [ -d "$ASTRO_DIR" ]; then
