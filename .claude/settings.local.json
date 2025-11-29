@@ -18,7 +18,9 @@
       "Bash(gh repo create:*)",
       "Bash(git push:*)",
       "Bash(sudo docker ps:*)",
-      "Bash(sudo docker compose:*)"
+      "Bash(sudo docker compose:*)",
+      "Bash(command -v:*)",
+      "Bash(./scripts/build-iso.sh:*)"
     ],
     "deny": [],
     "ask": []

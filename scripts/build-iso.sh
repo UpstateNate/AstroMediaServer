@@ -13,8 +13,8 @@ BUILD_DIR="${PROJECT_DIR}/build"
 ISO_DIR="${PROJECT_DIR}/iso"
 OUTPUT_DIR="${PROJECT_DIR}/output"
 
-UBUNTU_VERSION="24.04.1"
-UBUNTU_ISO_URL="https://releases.ubuntu.com/24.04/ubuntu-${UBUNTU_VERSION}-live-server-amd64.iso"
+UBUNTU_VERSION="24.04.3"
+UBUNTU_ISO_URL="https://releases.ubuntu.com/noble/ubuntu-${UBUNTU_VERSION}-live-server-amd64.iso"
 UBUNTU_ISO_NAME="ubuntu-${UBUNTU_VERSION}-live-server-amd64.iso"
 OUTPUT_ISO_NAME="astro-media-server-v0.1.iso"
 
